@@ -40,22 +40,31 @@ TEST <- TEST[,-HIGHCOR]
 # re-attach response vector to TRAIN
 TRAIN$TARGET <- TRAIN_Y
 
+# define xgb training parameters
+PARAM <- list(
+  # General Parameters
+  booster            = "gbtree",          # default
+  silent             = 0,                 # default
+  # Tree Booster Parameters
+  eta                = 0.02,              # default = 0.30
+  gamma              = 0,                 # default
+  max_depth          = 5,                 # default = 6
+  min_child_weight   = 1,                 # default
+  subsample          = 0.68,              # default = 1
+  colsample_bytree   = 0.70,              # default = 1
+  lambda             = 1,                 # default
+  alpha              = 0,                 # default
+  # Learning Task Parameters
+  objective          = "binary:logistic", # default = "reg:linear"
+  num_class          = 2,                 # default
+  base_score         = 0.5,               # default
+  eval_metric        = "auc"              # default = "rmes"
+)
+
 # convert TRAIN dataframe into a design matrix
 TRAIN_MAT <- sparse.model.matrix(TARGET ~ ., data = TRAIN)
 D_TRAIN <- xgb.DMatrix(data = TRAIN_MAT, label = TRAIN_Y)
 WATCHLIST <- list(TRAIN_MAT = D_TRAIN)
-
-# define xgb.train parameters
-PARAM <- list(objective        = "binary:logistic", 
-              booster          = "gbtree",
-              eval_metric      = "auc",
-              eta              = 0.01,
-              max_depth        = 6,
-              subsample        = 0.68,
-              colsample_bytree = 0.68,
-              gamma            = 0,
-              alpha            = 0
-)
 
 # set seed
 set.seed(6352) 
@@ -63,7 +72,7 @@ set.seed(6352)
 # run cross-validation
 CV1 <- xgb.cv(params      = PARAM, 
               data        = D_TRAIN, 
-              nrounds     = 1000, 
+              nrounds     = 500, 
               nfold       = 5,
               verbose     = 2
 )
@@ -78,22 +87,13 @@ MODEL <- xgb.train(params      = PARAM,
 )
 
 # attach a predictions vector to the test dataset
-TEST$TARGET <- -1
+TEST$TARGET <- 0
 
 # use the trained xgb model ("MODEL") on the test data ("TEST") to predict the response variable ("TARGET")
 TEST_MAT <- sparse.model.matrix(TARGET ~ ., data = TEST)
 PRED <- predict(MODEL, TEST_MAT)
 
 # create submission file
-SUBMIT <- data.frame(ImageId = c(1:length(PRED)), Label = PRED)
-write.csv(SUBMIT, "C:/Users/Evelyn Annette/Documents/Team Evelyn/Santander Kaggle/submit.csv", row.names = FALSE)
-
-
-
-
-
-
-
-
-
+SUBMIT <- data.frame(ID = TEST_ID, TARGET = PRED)
+write.csv(SUBMIT, "C:/Users/Evelyn Stamey/Documents/GitHub/Santander/Santander_submit.csv", row.names = FALSE)
 
