@@ -1,10 +1,8 @@
-
-####################################
 # load required packages
 library(Rcpp)
 library(ggplot2)
 library(caret)
-require(xgboost)
+library(xgboost)
 library(randomForest)
 library(gbm)
 library(MASS)
@@ -12,11 +10,8 @@ library(Matrix)
 library(boot)
 
 # read training and testing dataset
-TRAIN <- read.csv("C:/Users/Evelyn Annette/Documents/Team Evelyn/Kaggle/Santander Kaggle/Santander_train.csv")
-TEST <- read.csv("C:/Users/Evelyn Annette/Documents/Team Evelyn/Kaggle/Santander Kaggle/Santander_test.csv")
-
-# set seed
-set.seed(6352)
+TRAIN <- read.csv("C:/Users/Evelyn Stamey/Documents/GitHub/Santander/Santander_train.csv")
+TEST <- read.csv("C:/Users/Evelyn Stamey/Documents/GitHub/Santander/Santander_test.csv")
 
 # remove id column
 TRAIN$ID <- NULL
@@ -50,44 +45,48 @@ TRAIN_MAT <- sparse.model.matrix(TARGET ~ ., data = TRAIN)
 D_TRAIN <- xgb.DMatrix(data = TRAIN_MAT, label = TRAIN_Y)
 WATCHLIST <- list(TRAIN_MAT = D_TRAIN)
 
-# set seed
-set.seed(6352)
-
+# define xgb.train parameters
 PARAM <- list(objective        = "binary:logistic", 
               booster          = "gbtree",
               eval_metric      = "auc",
               eta              = 0.01,
               max_depth        = 6,
-              #min_child_weight = 4,
               subsample        = 0.68,
               colsample_bytree = 0.68,
               gamma            = 0,
               alpha            = 0
 )
 
+# set seed
+set.seed(6352) 
+
+# run cross-validation
 CV1 <- xgb.cv(params      = PARAM, 
               data        = D_TRAIN, 
               nrounds     = 1000, 
               nfold       = 5,
               verbose     = 2
 )
+MAX_AUC_INDEX <- which.max(CV1[, test.auc.mean])
 
-MAX_AUC = max(CV1[, test.auc.mean])
-MAX_AUC_INDEX = which.max(CV1[, test.auc.mean])
-
+# train xgb model
 MODEL <- xgb.train(params      = PARAM, 
                    data        = D_TRAIN, 
-                   nrounds     = 683, 
+                   nrounds     = MAX_AUC_INDEX, 
                    verbose     = 2,
                    watchlist   = WATCHLIST
 )
 
-
+# attach a predictions vector to the test dataset
 TEST$TARGET <- -1
+
+# use the trained xgb model ("MODEL") on the test data ("TEST") to predict the response variable ("TARGET")
 TEST_MAT <- sparse.model.matrix(TARGET ~ ., data = TEST)
 PRED <- predict(MODEL, TEST_MAT)
-SUBMIT <- data.frame(ID = TEST_ID, TARGET = PRED)
-write.csv(SUBMIT, "C:/Users/Evelyn Annette/Documents/Team Evelyn/Santander Kaggle/submission05.csv", row.names = FALSE)
+
+# create submission file
+SUBMIT <- data.frame(ImageId = c(1:length(PRED)), Label = PRED)
+write.csv(SUBMIT, "C:/Users/Evelyn Annette/Documents/Team Evelyn/Santander Kaggle/submit.csv", row.names = FALSE)
 
 
 
