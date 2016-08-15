@@ -56,7 +56,6 @@ PARAM <- list(
   alpha              = 0,                 # default
   # Learning Task Parameters
   objective          = "binary:logistic", # default = "reg:linear"
-  num_class          = 2,                 # default
   base_score         = 0.5,               # default
   eval_metric        = "auc"              # default = "rmes"
 )
@@ -70,24 +69,24 @@ WATCHLIST <- list(TRAIN_MAT = D_TRAIN)
 set.seed(6352) 
 
 # run cross-validation
-CV1 <- xgb.cv(params      = PARAM, 
-              data        = D_TRAIN, 
-              nrounds     = 500, 
-              nfold       = 5,
-              verbose     = 2
-)
-MAX_AUC_INDEX <- which.max(CV1[, test.auc.mean])
+# CV1 <- xgb.cv(params      = PARAM, 
+#               data        = D_TRAIN, 
+#               nrounds     = 500, 
+#               nfold       = 5,
+#               verbose     = 2
+# )
+# MAX_AUC_INDEX <- which.max(CV1[, test.auc.mean])
 
 # train xgb model
 MODEL <- xgb.train(params      = PARAM, 
                    data        = D_TRAIN, 
-                   nrounds     = MAX_AUC_INDEX, 
+                   nrounds     = 1000, # MAX_AUC_INDEX
                    verbose     = 2,
                    watchlist   = WATCHLIST
 )
 
 # attach a predictions vector to the test dataset
-TEST$TARGET <- 0
+TEST$TARGET <- -1
 
 # use the trained xgb model ("MODEL") on the test data ("TEST") to predict the response variable ("TARGET")
 TEST_MAT <- sparse.model.matrix(TARGET ~ ., data = TEST)
