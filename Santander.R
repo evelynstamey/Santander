@@ -27,13 +27,6 @@ TEST$ID <- NULL
 TRAIN_Y <- TRAIN$TARGET
 TRAIN$TARGET <- NULL
 
-# # count zero per record
-# count0 <- function(x) {
-#   return(sum(x == 0))
-# }
-# TRAIN$n0 <- apply(TRAIN, 1, FUN=count0)
-# TEST$n0 <- apply(TEST, 1, FUN=count0)
-
 # find and remove vectors that are linear combinations of other vectors
 LINCOMB <- findLinearCombos(TRAIN)
 TRAIN <- TRAIN[, -LINCOMB$remove]
